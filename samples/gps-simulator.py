@@ -1,18 +1,15 @@
 import paho.mqtt.client as mqtt
 import json
 import copy
-import os
 
-clientid = "fe002"
-mqtt_host = os.environ.get("MQTT_HOST", "venus.local")
-mqtt_port = int(os.environ.get("MQTT_PORT", "1883"))
+clientid = "fe003"
 
 registration = {
   "clientId": clientid,
   "connected": 1,
-  "version": "v0.2",
+  "version": "v0.9",
   "services": {
-    "tk1": "tank"
+    "gps1": "gps"
   }
 }
 
@@ -20,8 +17,13 @@ unregister = copy.deepcopy(registration)
 unregister["connected"] = 0
 
 data = {
-    "Level": 12.34,
-    "Remaining": 0.5678
+    "Position/Latitude": 51.5072,
+    "Position/Longitude": 0.1276,
+    "Course" : 0,
+    "Speed": 0,
+    "Altitude": 0,
+    "Fix": 10,
+    "NrOfSatellites": 10
 }
 
 def on_connect(client, userdata, flags, rc):
@@ -37,10 +39,10 @@ def on_message(client, userdata, msg):
 
     dbus_msg = json.loads(msg.payload)
     portalId = dbus_msg.get("portalId")
-    deviceId = dbus_msg.get("deviceInstance").get("tk1") # UPDATE THIS
+    deviceId = dbus_msg.get("deviceInstance").get("gps1") # UPDATE THIS
 
     for key in data:
-        topic = "W/{}/tank/{}/{}".format(portalId, deviceId, key) # UPDATE THIS
+        topic = "W/{}/gps/{}/{}".format(portalId, deviceId, key) # UPDATE THIS
         print("{} = {}".format(topic, data.get(key) ) )
         client.publish(topic, json.dumps({ "value": data.get(key) }) )
 
@@ -49,7 +51,7 @@ client.on_connect = on_connect
 client.on_message = on_message
 client.will_set("device/{}/Status".format(clientid), json.dumps(unregister)) # UPDATE THIS
 
-client.connect(mqtt_host, mqtt_port, 60)
+client.connect("venus.local", 1883, 60)
 
 # Blocking call that processes network traffic, dispatches callbacks and
 # handles reconnecting.

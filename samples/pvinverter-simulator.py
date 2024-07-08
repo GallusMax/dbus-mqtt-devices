@@ -1,18 +1,15 @@
 import paho.mqtt.client as mqtt
 import json
 import copy
-import os
 
-clientid = "fe002"
-mqtt_host = os.environ.get("MQTT_HOST", "venus.local")
-mqtt_port = int(os.environ.get("MQTT_PORT", "1883"))
+clientid = "st002"
 
 registration = {
   "clientId": clientid,
   "connected": 1,
-  "version": "v0.2",
+  "version": "v0.9",
   "services": {
-    "tk1": "tank"
+    "pv1": "pvinverter"
   }
 }
 
@@ -20,8 +17,23 @@ unregister = copy.deepcopy(registration)
 unregister["connected"] = 0
 
 data = {
-    "Level": 12.34,
-    "Remaining": 0.5678
+    "ErrorCode": 0,
+    "Ac/MaxPower": 133,
+    "Ac/Energy/Forward" : 1.1,
+    "Ac/Power": 1100,
+    "Ac/Current": 11,
+    "Ac/L1/Current": 3,
+    "Ac/L1/Energy/Forward": 30,
+    "Ac/L1/Power": 33.3,
+    "Ac/L1/Voltage": 12.3,
+    "Ac/L2/Current": 4,
+    "Ac/L2/Energy/Forward": 40,
+    "Ac/L2/Power": 44.4,
+    "Ac/L2/Voltage": 12.4,
+    "Ac/L3/Current": 5,
+    "Ac/L3/Energy/Forward": 50,
+    "Ac/L3/Power": 55.5,
+    "Ac/L3/Voltage": 12.5
 }
 
 def on_connect(client, userdata, flags, rc):
@@ -37,10 +49,10 @@ def on_message(client, userdata, msg):
 
     dbus_msg = json.loads(msg.payload)
     portalId = dbus_msg.get("portalId")
-    deviceId = dbus_msg.get("deviceInstance").get("tk1") # UPDATE THIS
+    deviceId = dbus_msg.get("deviceInstance").get("pv1") # UPDATE THIS
 
     for key in data:
-        topic = "W/{}/tank/{}/{}".format(portalId, deviceId, key) # UPDATE THIS
+        topic = "W/{}/pvinverter/{}/{}".format(portalId, deviceId, key) # UPDATE THIS
         print("{} = {}".format(topic, data.get(key) ) )
         client.publish(topic, json.dumps({ "value": data.get(key) }) )
 
@@ -49,7 +61,7 @@ client.on_connect = on_connect
 client.on_message = on_message
 client.will_set("device/{}/Status".format(clientid), json.dumps(unregister)) # UPDATE THIS
 
-client.connect(mqtt_host, mqtt_port, 60)
+client.connect("venus.local", 1883, 60)
 
 # Blocking call that processes network traffic, dispatches callbacks and
 # handles reconnecting.

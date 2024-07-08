@@ -1,0 +1,73 @@
+name: dbus-mqtt-devices
+description: Report an issue with dbus-mqtt-devices
+#title: "your issue title"
+labels: []
+projects: []
+# assignees:
+  # - octocat
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for supporting this project and taking the time to raise an issue. Please provide as much information as possible.
+  - type: dropdown
+    id: version
+    attributes:
+      label: Version
+      description: What version of dbus-mqtt-devices are you running?
+      options:
+        - 0.8.0 (current)
+        - 0.6.6 
+        - 0.6.5 
+        - 0.6.4 
+        - 0.6.3 
+        - 0.7.5 (beta/experimental)
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: venusos
+    attributes:
+      label: VenusOS version
+      description: What version of VenusOS are you running on your GX device, please also indicate if you are using a beta version of VenusOS. 
+    validations:
+      required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: Does this issue occur during installation or at runtime ?
+      options:
+        - Installation
+        - Runtime
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: discussion
+    attributes:
+      label: Is there a Discussion thread for this issue? Please paste a link.
+      description: Please start a discussion about your problem before raising an issue.
+      placeholder: "https://github.com/freakent/dbus-mqtt-devices/discussions/[number]"
+    validations:
+      required: false
+  - type: textarea
+    id: description
+    attributes:
+      label: What is the issue you are actually experiencing?
+      description: Please provide a detailed description with screenshots and/or code samples as appropriate. Include any steps to recreate this issue. If you answered Other to any question above then also incude details here.
+    validations:
+      required: true
+  - type: textarea
+    id: registration
+    attributes:
+      label: If this is not installation related, what does the status payload look like that you are publishing to the driver to register your device?
+      description: Please include the JSON or line of code that generates the JSON.
+      placeholder: "{ \"clientId\": <client id>, \"connected\": <1>, \"version\": \"<text string>\", \"services\": [<a dictionary of services that this device wants to use>] }"
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      render: shell

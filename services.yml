@@ -1,7 +1,12 @@
+# When defining services do not include Connected, Mgmt/ProcessName, Mgmt/ProcessVersion, Mgmt/Connection, DeviceInstance, DeviceName, 
+# ProductName or FirmwareVersion these are all handled automatically by the driver
+
+# For product id see https://gist.github.com/seidler2547/52f3e91cbcbf2fa257ae79371bb78588
+
 # https://github.com/victronenergy/venus/wiki/dbus#temperatures
 temperature:
   ProductId:
-    default: 65535 # 0xFFFF
+    default: 41314 # Generic Temperature Input
   CustomName:
     default: "My Temperature Sensor"
     persist: true
@@ -11,6 +16,11 @@ temperature:
     default: 2
     min: 0
     max: 2
+  Status:
+    description: "0=Ok; 1=Disconnected; 2=Short circuited; 3=Reverse polarity; 4=Unknown"
+    default: 0
+    min: 0
+    max: 4
   Temperature:
     description: "C"
   Pressure:
@@ -22,22 +32,30 @@ temperature:
 # https://github.com/victronenergy/venus/wiki/dbus#tank-levels
 tank:             
   ProductId:
-    default: 65535 # 0xFFFF
+    default: 41313 # Generic Tank Input
   CustomName:
     default: "My Tank Sensor"
     persist: true
+  Status:
+    description: "0=Ok; 1=Disconnected; 2=Short circuited; 3=Unknown"
+    default: 0
+    min: 0
+    max: 3
   FluidType:
-    description: "0=Fuel; 1=Fresh water; 2=Waste water; 3=Live well; 4=Oil; 5=Black water (sewage)"
+    description: |
+      0=Fuel; 1=Fresh water; 2=Waste water; 3=Live well; 4=Oil; 5=Black water (sewage)
+      6=Gasoline; 7=Diesel; 8=Liquid  Petroleum Gas (LPG); 9=Liquid Natural Gas (LNG)
+      10=Hydraulic oil; 11=Raw water
     persist: true
     default: 1
     min: 0
-    max: 5         
+    max: 11        
   Capacity:
     description: "m3"
     persist: true
     default: 0.1
-    min: 0
-    max: 9999         
+    #min: 0
+    #max: 9999         
   Level:            
     description: "0 to 100%" 
   Remaining:
@@ -47,7 +65,7 @@ tank:
 # https://github.com/victronenergy/venus/wiki/dbus#pv-inverters
 pvinverter:
   ProductId:
-    default: 45069 # 0xB00D, ESS Demo mode uses 45058
+    default: 45069 # 0xB00D, 0xB00D, 45069 = ET340, 45068 = ET112, ESS Demo mode uses 45058
   CustomName:
     default: "My PV Inverter"
     persist: true
@@ -65,26 +83,26 @@ pvinverter:
     default: 7
     min: 0
     max: 10
-#  AllowedRoles:
-#    default: '["grid", "pvinverter", "genset", "acload"]'
-#  Role:
-#    description: "grid, pvinverter, genset, acload"    
-#    persist: true
-#    default: "pvinverter"
-#  PhaseConfig:
-#    description: "0=3P.n; 1=3P.l; 2=2P; 3=1P; 4=3P"
-#    persist: true
-#    default: 0
-#    min: 0
-#    max: 4
-#  DeviceType: 
-#    description: "???"
-#    persist: true
-#    default: 71 # valued used by pvinverter in ESS demo mode
-#  Serial:
-#    description: "device serial number"
-#    persist: true
-#    default: ""
+  AllowedRoles:
+    default: ["grid", "pvinverter", "genset", "acload"]
+  Role:
+    description: "grid, pvinverter, genset, acload"    
+    persist: true
+    default: "pvinverter"
+    #  PhaseConfig:
+    #    description: "0=3P.n; 1=3P.l; 2=2P; 3=1P; 4=3P"
+    #    persist: true
+    #    default: 0
+    #    min: 0
+    #    max: 4
+    #  DeviceType: 
+    #    description: "???"
+    #    persist: true
+    #    default: 71 # valued used by pvinverter in ESS demo mode
+    #  Serial:
+    #    description: "device serial number"
+    #    persist: true
+    #    default: ""
   Ac/MaxPower: # Max rated power (in Watts) of the inverter
     description: "W"
     persist: true
@@ -153,18 +171,18 @@ grid:
     default: 0
     min: 0
     max: 2
-#  AllowedRoles:
-#    default: '["grid", "pvinverter", "genset", "acload"]'
-#  Role:
-#    description: "grid, pvinverter, genset, acload"    
-#    persist: true
-#    default: "grid"
-#  PhaseConfig:
-#    description: "0=3P.n; 1=3P.l; 2=2P; 3=1P; 4=3P"
-#    persist: true
-#    default: 0
-#    min: 0
-#    max: 4
+    #  AllowedRoles:
+    #    default: '["grid", "pvinverter", "genset", "acload"]'
+    #  Role:
+    #    description: "grid, pvinverter, genset, acload"    
+    #    persist: true
+    #    default: "grid"
+    #  PhaseConfig:
+    #    description: "0=3P.n; 1=3P.l; 2=2P; 3=1P; 4=3P"
+    #    persist: true
+    #    default: 0
+    #    min: 0
+    #    max: 4
   Ac/Energy/Forward: # Total bought energy over all phases
     description: "kWh"
     format: "{} kWh"
@@ -244,3 +262,75 @@ gps:
     description: "m"
   NrOfSatellites:
     description: "Count"
+
+
+# https://github.com/victronenergy/venus/wiki/dbus#evcharger
+evcharger:
+  ProductId:
+    default: 65535 # 0xFFFF
+  CustomName:
+    default: "My EV Charger"
+    persist: true
+  Ac/Energy/Forward:
+    description: "Ac Engergy Forward wh"
+    format: "{:.2f}W"
+  Ac/L1/Power:
+    description: "L1 Power used (W)"
+    format: "{} W"
+  Ac/L2/Power:
+    description: "L3 Power used (W)"
+    format: "{} W"
+  Ac/L3/Power:
+    description: "L3 Power used (W)"
+    format: "{} W"
+  Ac/Power:
+    description: "AC Power (W)"
+    format: "{} W"
+  AutoStart:
+    description: "0=Charger autostart disabled,  1=Charger autostart enabled"
+    default: 0
+    persist: true
+  ChargingTime:
+    description: "Total charging time (seconds)"
+    default: 0
+    format: "{} s"
+  Current:
+    description: "Charging current actual (A)"
+    default: 0
+  EnableDisplay:
+    description: "Control via display; 0=control disabled, 1=control enabled"
+    default: 1
+    persist: true
+  MaxCurrent:
+    description: "Max current (A)"
+    default: 0
+    persist: true 
+  Mode:
+    description: "0=Manual, 1=Auto"
+    default: 0
+    min: 0
+    max: 2
+    persist: true
+  Model:
+    description: "Model, e.g. AC22E or AC22NS (for No Screen)"
+    default: "AC22NS"
+  Position: # 0=AC input 1;1=AC output;2=AC input 2
+    persist: true
+    default: 0
+    min: 0
+    max: 2
+  Role:
+    description: "Role"
+  SetCurrent: # Set charge current (manual mode)
+    description: "Charging current (A)"
+    persist: true
+    default: 0
+  StartStop: # Start/stop charging (manual mode)
+    description: "Start Stop"
+    default: 0
+    persist: true
+  Status:
+    description: "0=disconnected, 1=connected, 2=charging, 3=charged,4=waiting for sun, 5=waiting for RFID, 6=waiting for start, 7=low SOC, 8=ground test error, 9=welded contacts error, 10=CP input test error (shorted), 11=residual current detected, 12=undervoltage detected, 13=overvoltage detected, 14=overheating detected, 15-19=reserved, 20=charging limit"
+    default: 1
+    min: 0
+    max: 20

@@ -3,7 +3,7 @@
 
 # For product id see https://gist.github.com/seidler2547/52f3e91cbcbf2fa257ae79371bb78588
 
-https://github.com/victronenergy/venus/wiki/dbus#ac-chargers
+# https://github.com/victronenergy/venus/wiki/dbus#ac-chargers
 charger:
   ProductId:
     default: 65535 # ? e.g. 5153 Phoenix Charger 12/100, 5154 : 12/200, 5169 : 24/50, 5170 Phoenix Charger 24/100

@@ -1,18 +1,15 @@
 import paho.mqtt.client as mqtt
 import json
 import copy
-import os
 
-clientid = "fe002"
-mqtt_host = os.environ.get("MQTT_HOST", "venus.local")
-mqtt_port = int(os.environ.get("MQTT_PORT", "1883"))
+clientid = "jkmqtt"
 
 registration = {
   "clientId": clientid,
   "connected": 1,
-  "version": "v0.2",
+  "version": "v1.0",
   "services": {
-    "tk1": "tank"
+    "jkbms2": "battery"
   }
 }
 
@@ -20,9 +17,23 @@ unregister = copy.deepcopy(registration)
 unregister["connected"] = 0
 
 data = {
-    "Level": 12.34,
-    "Remaining": 0.5678
+    "System/MinCellVoltage":  3.325,
+    "System/MaxCellVoltage":  3.326,
+    "Dc/0/Temperature":  13,
+    "Dc/0/Voltage":  26.6,
+    "Dc/0/Current":  -2.48,
+    "Dc/0/Power":  -65,
+    "Soc":  78,
+    "System/NrOfCellsPerBattery":  8,
+    "Capacity":  195,
+    "InstalledCapacity":  250,
+    "Io/AllowToCharge": 1,
+    "Io/AllowToDischarge": 1,
+    "System/NrOfModulesBlockingCharge": 0,
+    "System/NrOfModulesBlockingDischarge": 0,
+    "System/NrOfCellsPerBattery": 8,
 }
+
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code "+str(rc))
@@ -37,10 +48,10 @@ def on_message(client, userdata, msg):
 
     dbus_msg = json.loads(msg.payload)
     portalId = dbus_msg.get("portalId")
-    deviceId = dbus_msg.get("deviceInstance").get("tk1") # UPDATE THIS
+    deviceId = dbus_msg.get("deviceInstance").get("jkbms2") # UPDATE THIS
 
     for key in data:
-        topic = "W/{}/tank/{}/{}".format(portalId, deviceId, key) # UPDATE THIS
+        topic = "W/{}/battery/{}/{}".format(portalId, deviceId, key) # UPDATE THIS
         print("{} = {}".format(topic, data.get(key) ) )
         client.publish(topic, json.dumps({ "value": data.get(key) }) )
 
@@ -49,7 +60,7 @@ client.on_connect = on_connect
 client.on_message = on_message
 client.will_set("device/{}/Status".format(clientid), json.dumps(unregister)) # UPDATE THIS
 
-client.connect(mqtt_host, mqtt_port, 60)
+client.connect("venus.local", 1883, 60)
 
 # Blocking call that processes network traffic, dispatches callbacks and
 # handles reconnecting.

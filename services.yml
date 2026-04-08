@@ -3,6 +3,56 @@
 
 # For product id see https://gist.github.com/seidler2547/52f3e91cbcbf2fa257ae79371bb78588
 
+https://github.com/victronenergy/venus/wiki/dbus#ac-chargers
+charger:
+  ProductId:
+    default: 65535 # ? e.g. 5153 Phoenix Charger 12/100, 5154 : 12/200, 5169 : 24/50, 5170 Phoenix Charger 24/100
+  CustomName:
+    default: "My Chargerr"
+    persist: true
+  Ac/In/L1/I:
+    description: "input current (A)"
+  Ac/In/L1/P:
+    description: "input power (W)"
+  Ac/In/L1/CurrentLimit:
+    description: "configured max input current (A)"
+  NrOfOutputs:
+    description: "actual number of outputs"
+  Dc/0/Voltage:
+    description: "V DC"
+  Dc/0/Current:
+    description: "A, positive when charging"
+  Dc/0/Temperature:
+    description: "Degrees centigrade, charger temperature reading"
+  Dc/1/Voltage:
+    description: "equivalent for second output"
+  Dc/1/Current:
+    description: "A, positive when charging"
+  Dc/1/Temperature:
+    description: "Degrees centigrade, charger temperature reading"
+  Mode:
+    description: "1=on; 4=off"
+  State:
+    description: "0=Off; 2=Fault; 3=Bulk; 4=Absorption; 5=Float; 6=Storage; 7=Equalize; 252=External control"
+  ErrorCode:
+    description: |
+      0=No error; 1=Battery temperature too high; 2=Battery voltage too high; 
+      3=Battery temperature sensor miswired (+); 4=Battery temperature sensor miswired (-); 
+      5=Battery temperature sensor disconnected; 
+      6=Battery voltage sense miswired (+); 7=Battery voltage sense miswired (-); 8=Battery voltage sense disconnected; 
+      9=Battery voltage wire losses too high; 
+      17=Charger temperature too high; 18=Charger over-current; 20=Bulk time limit reached; 
+      34=Internal error; 37=No input voltage; 65=Device disappeared during parallel operation; 
+      66=Incompatible device encountered for parallel operation; 
+      67=BMS connection lost; 113=Internal error; 114=Internal error; 
+      115=Communication lost; 116=Internal error; 117=Internal error; 118=Internal error; 
+      119=Settings invalid/corrupted; 120=Internal reference voltage failure
+    default: 0  
+  Alarms/LowVoltage:
+    description: "0=Inactive; 1=Active"
+  Alarms/HighVoltage:
+    description: "0=Inactive; 1=Active"
+    
 # https://github.com/victronenergy/venus/wiki/dbus#alternator-and-dcsource
 alternator:
   ProductId:

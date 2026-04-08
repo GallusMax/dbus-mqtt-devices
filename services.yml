@@ -43,7 +43,7 @@ charger:
       6=Battery voltage sense miswired (+); 7=Battery voltage sense miswired (-); 8=Battery voltage sense disconnected; 
       9=Battery voltage wire losses too high; 
       17=Charger temperature too high; 18=Charger over-current; 20=Bulk time limit reached; 
-      34=Internal error; 37=No input voltage; 65=Device disappeared during parallel operation; 
+      34=Input excessive current; 37=No input voltage; 65=Device disappeared during parallel operation; 
       66=Incompatible device encountered for parallel operation; 
       67=BMS connection lost; 113=Internal error; 114=Internal error; 
       115=Communication lost; 116=Internal error; 117=Internal error; 118=Internal error; 

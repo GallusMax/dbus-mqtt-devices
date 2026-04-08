@@ -8,7 +8,7 @@ charger:
   ProductId:
     default: 65535 # ? e.g. 5153 Phoenix Charger 12/100, 5154 : 12/200, 5169 : 24/50, 5170 Phoenix Charger 24/100
   CustomName:
-    default: "My Chargerr"
+    default: "My Charger"
     persist: true
   Ac/In/L1/I:
     description: "input current (A)"
@@ -18,6 +18,7 @@ charger:
     description: "configured max input current (A)"
   NrOfOutputs:
     description: "actual number of outputs"
+    default: 1
   Dc/0/Voltage:
     description: "V DC"
   Dc/0/Current:

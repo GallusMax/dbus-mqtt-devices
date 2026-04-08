@@ -17,9 +17,12 @@ import re
 import yaml
 
 from device import MQTTDevice
+from device_proxy import MQTTDeviceProxy
+from helpers import build_dbus_payload, device_instances
 
 AppDir = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(1, os.path.join(AppDir, 'ext', 'dbus-mqtt'))
+# sys.path.insert(1, os.path.join(AppDir, 'ext', 'dbus-mqtt'))
+sys.path.insert(1, os.path.join(AppDir, 'lib', 'dbus-mqtt'))
 from mqtt_gobject_bridge import MqttGObjectBridge
 sys.path.insert(1, os.path.join(AppDir, 'ext', 'velib_python'))
 from vedbus import VeDbusItemImport
@@ -38,6 +41,7 @@ class MQTTDeviceManager(MqttGObjectBridge):
         self.service_types = self._read_service_types()
         self.debug = debug
         self._devices = {}
+        self._lwt = {}
         MqttGObjectBridge.__init__(self, mqtt_server, CLIENTID, ca_cert, user, passwd, debug)
 
     # RC is the Connection Result 0: Connection successful 1: Connection refused - incorrect protocol version 
@@ -49,6 +53,7 @@ class MQTTDeviceManager(MqttGObjectBridge):
         logging.info('[Connected] Result code {}'.format(rc))
         if rc == 0:
             self._subscribe_to_device_topic()
+            self._subscribe_to_proxy_topic()
     
     def _on_message(self, client, userdata, msg):
         MqttGObjectBridge._on_message(self, client, userdata, msg)
@@ -63,9 +68,32 @@ class MQTTDeviceManager(MqttGObjectBridge):
                 elif status['connected'] == 0:
                     self._remove_device(status)
                 else:
-                    logging.warning("Unrecognised device Connected status %s for client %s", status["clientId"])
+                    logging.warning("Unrecognised device Connected status %s for client %s", status.get("connected", "unknown"), status.get("clientId"))
             else:
-                logging.warning("Status message from client %s failed validation and has been rejected", status["clientId"])
+
+                logging.warning("Status message received from topic %s failed validation and has been rejected", msg.topic)
+
+        elif MQTT.topic_matches_sub("device/+/Proxy", msg.topic):
+            proxy = MQTTDeviceProxy(client)
+            payload = json.loads(msg.payload)
+            client_id = msg.topic.split("/")[1]
+            proxy.process_message(client_id, payload)
+
+        elif msg.topic in self._lwt:
+            lwt_value = self._lwt[msg.topic].get("lwt_value")
+            clientId = self._lwt[msg.topic].get("clientId")
+            lwt_payload = msg.payload.decode("utf-8")
+            if lwt_payload == lwt_value:
+                logging.debug("Message payload and LWT Value match so removing device %s, device has been disconnected", lwt_payload, lwt_value, clientId)
+                # this is a last will message, remove the device
+                status = {"clientId": clientId, "connected": 0}
+                self._remove_device(status)
+                self._lwt[msg.topic] = None
+                del self._lwt[msg.topic]
+                self._client.unsubscribe(msg.topic)
+                logging.info("Received LWT message for %s, device has been disconnected", clientId)
+            else:
+                logging.debug("Message payload and LWT Value do not match for device %s", lwt_payload, lwt_value, clientId)
 
         else:
             logging.warning('Received message on topic %s, but no action is defined', msg.topic)
@@ -74,41 +102,46 @@ class MQTTDeviceManager(MqttGObjectBridge):
         validFormat = "^[a-zA-Z0-9_]*$"
         isValid = True
 
-        # Check the connected attribute, expect 1 = connected, 0 = disconnected 
-        connected = status.get('connected') 
-        if connected is None or connected == "": 
-            isValid = False
-            logging.warning("status.connected can not be blank")
-        else:
-            if connected < 0 or connected > 1 :
+        try:
+            # Check the connected attribute, expect 1 = connected, 0 = disconnected 
+            connected = status.get('connected') 
+            if connected is None or connected == "": 
                 isValid = False
-                logging.warning("status.connected must be either 1 or 0")
-
-        # Check the clientId attribute
-        clientId = status.get('clientId')
-        if clientId is None or clientId == "":
-            isValid = False
-            logging.warning("status.clientId can not be blank")
-        else:
-            if re.search(validFormat, clientId) == None :
-                isValid = False
-                logging.warning("status.clientId %s can only contain alpha numeric characters and _ (underscores)", clientId)
-
-        # Check the services dictionary object
-        services = status.get('services')
-        if connected == 1:
-            if services is None or services == "" or not isinstance(services, dict):
-                isValid = False
-                logging.warning("status.services must contain a dictionary of values if connected = 1")
+                logging.warning("status.connected can not be blank")
             else:
-                for service_id in services.keys(): # Check each service in the dictionary
-                    if re.search(validFormat, service_id) == None : 
-                        isValid = False
-                        logging.warning("status.services contains a service %s with an invalid identifier, only alpha numeric characters and _ (underscores) are allowed", service_id)
+                if connected < 0 or connected > 1 :
+                    isValid = False
+                    logging.warning("status.connected must be either 1 or 0")
 
-                    if services.get(service_id) not in self.service_types: # as defined in services.yml
-                        isValid = False
-                        logging.warning("status.service type %s is not supported, please check services.yml", services.get(service_id))
+            # Check the clientId attribute
+            clientId = status.get('clientId')
+            if clientId is None or clientId == "":
+                isValid = False
+                logging.warning("status.clientId can not be blank")
+            else:
+                if re.search(validFormat, clientId) == None :
+                    isValid = False
+                    logging.warning("status.clientId %s can only contain alpha numeric characters and _ (underscores)", clientId)
+
+            # Check the services dictionary object
+            services = status.get('services')
+            if connected == 1:
+                if services is None or services == "" or not isinstance(services, dict):
+                    isValid = False
+                    logging.warning("status.services must contain a dictionary of values if connected = 1")
+                else:
+                    for service_id in services.keys(): # Check each service in the dictionary
+                        if re.search(validFormat, service_id) == None : 
+                            isValid = False
+                            logging.warning("status.services contains a service %s with an invalid identifier, only alpha numeric characters and _ (underscores) are allowed", service_id)
+
+                        if services.get(service_id) not in self.service_types: # as defined in services.yml
+                            isValid = False
+                            logging.warning("status.service type %s is not supported, please check services.yml", services.get(service_id))
+
+        except:
+            logging.error("status message is invalid: %s", status)
+            isValid = False       
 
         return isValid
 
@@ -134,6 +167,14 @@ class MQTTDeviceManager(MqttGObjectBridge):
         mqtt = self._client
         mqtt.subscribe("device/+/Status")
 
+    def _subscribe_to_proxy_topic(self):
+        mqtt = self._client
+        mqtt.subscribe("device/+/Proxy")
+
+    def _subscribe_to_lwt_topic(self, clientId, lwt_topic):
+        mqtt = self._client
+        mqtt.subscribe(lwt_topic)
+
     def _process_device(self, status):
         mqtt = self._client
         clientId = status["clientId"] # the device's client id
@@ -141,15 +182,17 @@ class MQTTDeviceManager(MqttGObjectBridge):
         if device is None:
             # create a new device
             self._devices[clientId] = device = MQTTDevice(device_mgr=self, device_status=status)
-        #deprecated - start
-        topic = "device/{}/DeviceInstance".format(clientId)
-        res = mqtt.publish(topic, json.dumps(device.device_instances()))
-        #deprecated - end
+
+        if status.get("lwt_topic") is not None:   
+            # subscribe to the last will topic
+            self._lwt[status.get("lwt_topic")] = { "clientId": clientId, "lwt_value": status.get("lwt_value", "false") }
+            self._subscribe_to_lwt_topic(clientId, status.get("lwt_topic"))
 
         topic = "device/{}/DBus".format(clientId)
-        res = mqtt.publish(topic, json.dumps( { "portalId": self.portalId, "deviceInstance": device.device_instances() } ) )
+        #res = mqtt.publish(topic, json.dumps( { "portalId": self.portalId, "deviceInstance": device.device_instances() } ) )
+        res = mqtt.publish(topic, json.dumps( build_dbus_payload(self.portalId, device.services) ) )
 
-        logging.info('publish %s to %s, status is %s', { "portalId": self.portalId, "deviceInstance": device.device_instances() }, topic, res.rc)
+        logging.info('publish %s to %s, status is %s', build_dbus_payload(self.portalId, device.services), topic, res.rc)
 
 
     def _remove_device(self, status):
